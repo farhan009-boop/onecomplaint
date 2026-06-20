@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneComplaint — Citizen Resolution Portal</title>
+    <link rel="icon" type="image/png" href="indian_flag.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="app-preloader" class="preloader-overlay">
+    <div class="preloader-content">
+        <div class="app-spinner-ring"></div>
+        <div class="preloader-logo">ONE<span>COMPLAINT</span></div>
+        <p class="preloader-subtext">Aapki Awaaz, Sahi Jagah Tak...</p>
+    </div>
+</div>
+
+<!-- SINGLE AUTH MODAL (Google + Email) -->
+<div id="auth-gateway-modal" class="modal-overlay" style="display:none;">
+    <div class="auth-card animate-fade-up">
+        <button class="modal-dismiss-cross" onclick="closeAuthModal()">&#10005;</button>
+        <div class="logo">ONE<span>COMPLAINT</span></div>
+        <p class="auth-tagline">Secure Identity Verification</p>
+
+        <button class="google-sso-trigger" id="googleSignInBtn" onclick="signInWithGoogle()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:20px;vertical-align:middle;margin-right:10px;" alt="G">
+            Continue with Google
+        </button>
+
+        <div class="auth-divider"><span>OR</span></div>
+
+        <div class="auth-tabs">
+            <button id="tab-login-btn" class="auth-tab-trigger active" onclick="toggleAuthTabs('login')">Login</button>
+            <button id="tab-signup-btn" class="auth-tab-trigger" onclick="toggleAuthTabs('signup')">Sign Up</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div id="login-form-block" class="auth-form-wrapper">
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="login-email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password">
+            </div>
+            <button class="auth-action-submit" onclick="loginWithEmail()">Login Securely</button>
+        </div>
+
+        <!-- SIGNUP FORM -->
+        <div id="signup-form-block" class="auth-form-wrapper" style="display:none;">
+            <div class="form-scroll-area">
+                <div class="form-group"><label>Full Name</label><input type="text" id="reg-name" placeholder="Rahul Sharma"></div>
+                <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com"></div>
+                <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Create a password"></div>
+                <div class="form-group"><label>Phone</label><input type="tel" id="reg-phone" placeholder="+91 XXXXX XXXXX"></div>
+                <div class="form-group"><label>Address</label><input type="text" id="reg-address" placeholder="Flat No, Building, Street"></div>
+                <div class="form-group"><label>City</label><input type="text" id="reg-city" placeholder="New Delhi"></div>
+                <div class="form-group"><label>Pincode</label><input type="text" id="reg-pincode" placeholder="110001" maxlength="6"></div>
+            </div>
+            <button class="auth-action-submit" onclick="signupWithEmail()">Create Account</button>
+        </div>
+    </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div id="profile-modal" class="modal-overlay" style="display:none;">
+    <div class="auth-card animate-fade-up" style="max-width:520px;">
+        <button class="modal-dismiss-cross" onclick="closeProfileModal()">&#10005;</button>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+            <div id="profile-avatar-circle" class="profile-avatar">R</div>
+            <div>
+                <div style="font-size:20px;font-weight:800;color:#0b3d91;" id="profile-display-name">Citizen</div>
+                <div style="font-size:13px;color:#486581;" id="profile-display-email">Not signed in</div>
+            </div>
+        </div>
+        <div style="text-align:left;">
+            <div class="form-group"><label>Full Name</label><input type="text" id="p-name" placeholder="Rahul Sharma"></div>
+            <div class="form-group"><label>Phone Number</label><input type="tel" id="p-phone" placeholder="+91 XXXXX XXXXX"></div>
+            <div class="form-group"><label>Address</label><input type="text" id="p-address" placeholder="Flat No, Building, Street"></div>
+            <div class="form-group"><label>City</label><input type="text" id="p-city" placeholder="New Delhi"></div>
+            <div class="form-group"><label>Pincode</label><input type="text" id="p-pincode" placeholder="110001" maxlength="6"></div>
+        </div>
+        <button class="auth-action-submit" onclick="saveProfile()" style="margin-bottom:12px;">Save Profile Details</button>
+        <button class="auth-action-submit" onclick="handleLogout()" style="background:#e53e3e;">Logout</button>
+        <p id="profile-save-msg" style="color:#138808;font-size:13px;font-weight:700;margin-top:10px;display:none;">✓ Profile saved! Your details will appear in all generated letters.</p>
+    </div>
+</div>
+
+<!-- HEADER -->
+<header>
+    <div class="logo">ONE<span>COMPLAINT</span></div>
+    <button class="menu-toggle-btn" id="menuToggleBtn"><span></span><span></span><span></span></button>
+    <nav id="navMenu">
+        <a href="#home">Home</a>
+        <a href="#tutorials">How To Use</a>
+        <a href="#charter-section">SLA Timelines</a>
+        <a href="#articles">Ward Directory</a>
+        <div id="header-location-badge" class="header-loc-badge"><span class="pulse-dot"></span><span id="geo-badge-text">Detecting...</span></div>
+        <a href="#profile" class="profile-btn" id="profile-indicator-name" onclick="openProfileModal(event)">👤 Profile</a>
+        <button class="login" id="authPortalNavBtn" onclick="openAuthModal()">Login</button>
+    </nav>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero-centered animate-fade-up" id="home">
+    <h1>आपकी आवाज़,<br><span>सही जगह तक</span></h1>
+    <p class="hindi-sub">प्रॉब्लम सबको दिखती है, लेकिन कम्प्लेंट कहां करें ये पता नहीं होता। OneComplaint automatically identifies the correct government body and routes your issues.</p>
+
+    <div class="ai-box-centered glass-panel">
+        <div id="attachment-preview-dock" class="preview-dock" style="display:none;"></div>
+        <textarea id="complaint" placeholder="Describe your problem here in detail... (e.g. There is a large pothole on MG Road near sector 5 for 3 weeks and nobody has fixed it)"></textarea>
+
+        <div class="media-limits-text" id="media-limit-warning" style="display:none;">Maximum 3 files allowed.</div>
+
+        <div class="input-actions">
+            <!-- Modern SVG icons replacing old emoji -->
+            <button class="icon-btn action-mic" id="voiceBtn" title="Speak to Type">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            </button>
+            <button class="icon-btn action-camera" id="cameraBtn" title="Open Camera">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+            </button>
+            <button class="icon-btn action-file" id="fileBtn" title="Attach Evidence (Max 3)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+            </button>
+            <button id="analyzeBtn" class="analyze-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:6px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                Deep Analyze &amp; Resolve
+            </button>
+        </div>
+
+        <input type="file" id="hiddenFileInput" style="display:none;" accept="image/*" multiple>
+
+        <div id="camera-preview-window" class="camera-preview" style="display:none;">
+            <video id="webcam-video" autoplay playsinline></video>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:10px;">
+                <button id="captureSnapshotBtn" class="snapshot-trigger-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle;margin-right:5px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                    Capture
+                </button>
+                <button class="snapshot-trigger-btn" style="background:#486581;" onclick="closeCamera()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- IMAGE STRIP -->
+<div class="strip-slider-container">
+    <div class="slider-track">
+        <div class="slide"><img src="images/garbage.png.avif" alt="Issue"></div>
+        <div class="slide"><img src="images/kooda.png.jpg" alt="Issue"></div>
+        <div class="slide"><img src="images/traffic.png.jpg" alt="Issue"></div>
+        <div class="slide"><img src="images/traffic.png (2).jpg" alt="Issue"></div>
+        <div class="slide"><img src="images/nala.png.jpg" alt="Issue"></div>
+        <div class="slide"><img src="images/nala2.png.jpg" alt="Issue"></div>
+        <div class="slide"><img src="images/rain.png.jpg" alt="Issue"></div>
+        <div class="slide"><img src="images/crowd.png.avif" alt="Issue"></div>
+        <div class="slide"><img src="images/footpath.png.avif" alt="Issue"></div>
+        <div class="slide"><img src="images/hospital.png.avif" alt="Issue"></div>
+        <div class="slide"><img src="images/garbage.png.avif" alt="Clone"></div>
+        <div class="slide"><img src="images/kooda.png.jpg" alt="Clone"></div>
+        <div class="slide"><img src="images/traffic.png.jpg" alt="Clone"></div>
+        <div class="slide"><img src="images/traffic.png (2).jpg" alt="Clone"></div>
+        <div class="slide"><img src="images/nala.png.jpg" alt="Clone"></div>
+        <div class="slide"><img src="images/nala2.png.jpg" alt="Clone"></div>
+        <div class="slide"><img src="images/rain.png.jpg" alt="Clone"></div>
+        <div class="slide"><img src="images/crowd.png.avif" alt="Clone"></div>
+        <div class="slide"><img src="images/footpath.png.avif" alt="Clone"></div>
+        <div class="slide"><img src="images/hospital.png.avif" alt="Clone"></div>
+    </div>
+</div>
+
+<!-- SOLUTION DESK -->
+<section id="solution-desk" class="portal-hub" style="display:none;">
+    <h2>🛠️ Deep Action Resolution Desk</h2>
+    <div class="workspace-stacked">
+        <div class="panel-card card blueprint-glow glass-panel">
+            <h3>🔍 Smart Audit &amp; Jurisdiction Mapping</h3>
+            <div id="meta-indicators" class="meta-indicators"></div>
+
+            <!-- FULL ROADMAP SECTION -->
+            <div id="complaint-roadmap" class="roadmap-section" style="display:none;margin-top:24px;"></div>
+
+            <button id="letterBtn" class="action-btn-styled" style="margin-top:20px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                Generate Official Action Complaint
+            </button>
+        </div>
+
+        <div class="panel-card card glass-panel" id="letter-panel" style="display:none;">
+            <h3>✉️ Official Action Draft <span class="edit-badge">✍️ Click to edit</span></h3>
+            <div id="letter-output" class="letter-output-box" contenteditable="true"></div>
+            <div class="dispatch-routing-row">
+                <button id="gmailBtn" class="action-btn-styled email-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    Send via Gmail
+                </button>
+                <button id="pdfBtn" class="action-btn-styled download-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TUTORIALS -->
+<section id="tutorials" class="articles-section scroll-reveal">
+    <h2>How To Use OneComplaint</h2>
+    <p class="section-desc">Step-by-step video walkthrough — record your complaint and let AI route it to the right government desk automatically.</p>
+    <div class="tutorial-box-container card glass-panel">
+        <div class="video-placeholder-frame">
+            <div class="video-play-mock-btn">▶</div>
+            <p>OneComplaint Video Tutorial — Coming Soon</p>
+        </div>
+        <div class="tutorial-text-steps">
+            <h3>System Navigation Flow</h3>
+            <ol class="styled-ordered-list">
+                <li><strong>Describe Issue:</strong> Type or speak your grievance. Attach up to 3 evidence photos.</li>
+                <li><strong>Location Sync:</strong> Allow location access so AI can auto-fill your city and area details.</li>
+                <li><strong>AI Routing:</strong> Gemini AI maps the exact department, desk, and SLA timeline for your issue.</li>
+                <li><strong>Roadmap View:</strong> See the full station-by-station complaint escalation path.</li>
+                <li><strong>Dispatch:</strong> Download a legal PDF or send directly via Gmail.</li>
+            </ol>
+        </div>
+    </div>
+</section>
+
+<!-- SLA TABLE -->
+<section id="charter-section" class="articles-section scroll-reveal">
+    <h2>⚖️ Citizen Charter SLA Timelines</h2>
+    <p class="section-desc">Know your legal rights. Government desks are legally bound to address issues within these statutory windows.</p>
+    <div class="table-scroll-wrapper card glass-panel">
+        <table class="premium-sla-table" id="slaTable">
+            <thead><tr><th>Issue Classification</th><th>Mandated Redressal Desk</th><th>Statutory Timeline</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Broken Potholes &amp; Roads</strong></td><td>Public Works Dept (PWD) Zonal Engineer</td><td><span class="table-badge text-saffron">7 Working Days</span></td></tr>
+                <tr><td><strong>Sewage Leak / Contamination</strong></td><td>Water Supply &amp; Sewerage Board</td><td><span class="table-badge text-red">24 Hours (Emergency)</span></td></tr>
+                <tr><td><strong>Cyber Financial Frauds</strong></td><td>National Cyber Crime Reporting Bureau</td><td><span class="table-badge text-red">Immediate</span></td></tr>
+                <tr><td><strong>Adulterated / Expired Food</strong></td><td>Food Safety Authority Office (FSSAI)</td><td><span class="table-badge text-green">48 Hours Audit</span></td></tr>
+                <tr><td><strong>Malfunctioning Streetlamps</strong></td><td>Municipal Power Grid Cell</td><td><span class="table-badge text-saffron">3 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Illegal Garbage Dumping</strong></td><td>Solid Waste Management Division</td><td><span class="table-badge text-saffron">48 Hours</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Dead Animals on Road</strong></td><td>Municipal Vet Services Wing</td><td><span class="table-badge text-red">12 Hours</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Unlawful Building Encroachment</strong></td><td>Zonal Building Inspector</td><td><span class="table-badge text-saffron">15 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Bribery / Corruption</strong></td><td>Anti-Corruption Bureau (ACB)</td><td><span class="table-badge text-green">Confidential Audit</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Loudspeaker Noise Pollution</strong></td><td>Pollution Control Board</td><td><span class="table-badge text-red">Immediate Response</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Illegal Parking &amp; Traffic</strong></td><td>Traffic Police Control Room</td><td><span class="table-badge text-red">Immediate Towing</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Mosquito Fogging Request</strong></td><td>Municipal Vector Control Dept</td><td><span class="table-badge text-saffron">3 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Public Toilet Maintenance</strong></td><td>Sanitation Engineering Wing</td><td><span class="table-badge text-saffron">48 Hours</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Property Tax Discrepancies</strong></td><td>Revenue Department Assessor</td><td><span class="table-badge text-saffron">15 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Ration Card / PDS Grievances</strong></td><td>Department of Food &amp; Civil Supplies</td><td><span class="table-badge text-saffron">10 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Hazardous Tree Pruning</strong></td><td>Horticulture Department</td><td><span class="table-badge text-saffron">5 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Public Transport Grievances</strong></td><td>State Transport Authority</td><td><span class="table-badge text-saffron">14 Working Days</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Stray Animal Aggression</strong></td><td>Animal Birth Control Cell</td><td><span class="table-badge text-red">24 Hours Response</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>Water Mafia / Tanker Issues</strong></td><td>Zonal Water Authority Enforcement</td><td><span class="table-badge text-red">48 Hours Check</span></td></tr>
+                <tr class="sla-extra-row" style="display:none;"><td><strong>RTI Filing Delay Appeals</strong></td><td>Central Information Commission (CIC)</td><td><span class="table-badge text-saffron">30 Days Statutory</span></td></tr>
+            </tbody>
+        </table>
+        <div style="text-align:center;margin-top:20px;">
+            <button id="show-more-sla-btn" class="profile-btn" style="cursor:pointer;border:none;font-size:15px;padding:10px 20px;">View All 20 Timelines ⬇</button>
+        </div>
+    </div>
+</section>
+
+<!-- WARD DIRECTORY -->
+<section id="articles" class="articles-section scroll-reveal">
+    <h2>🏢 Comprehensive Jurisdiction Ward Directory</h2>
+    <p class="section-desc">Click any category to access official helplines, head office websites, step-by-step roadmaps, and RTI filing procedures.</p>
+    <div class="articles-grid bento-architecture">
+        <div class="article-card card glass-panel" onclick="openArticle('rti')"><div class="article-icon">📜</div><h3>File an RTI</h3><span class="read-more">Step-by-Step Roadmap →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('sewage')"><div class="article-icon">🪠</div><h3>Sewage &amp; Drainage</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('roads')"><div class="article-icon">🛣️</div><h3>PWD Roads &amp; Potholes</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('electricity')"><div class="article-icon">⚡</div><h3>Electricity Grid</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('waste')"><div class="article-icon">🗑️</div><h3>Solid Waste &amp; Garbage</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('food')"><div class="article-icon">🍔</div><h3>FSSAI Food Safety</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('traffic')"><div class="article-icon">🚦</div><h3>Traffic Operations</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('scam')"><div class="article-icon">🛡️</div><h3>Cyber Crime Bureau</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('water')"><div class="article-icon">🚰</div><h3>Water Distribution</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('animals')"><div class="article-icon">🐕</div><h3>Stray Animal Control</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('corruption')"><div class="article-icon">💼</div><h3>Anti-Corruption Bureau</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('noise')"><div class="article-icon">🔊</div><h3>Noise Pollution</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('encroachment')"><div class="article-icon">🚧</div><h3>Illegal Encroachment</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('parks')"><div class="article-icon">🌳</div><h3>Parks &amp; Horticulture</h3><span class="read-more">Official Helplines →</span></div>
+        <div class="article-card card glass-panel" onclick="openArticle('mosquito')"><div class="article-icon">🦟</div><h3>Mosquito &amp; Vector Control</h3><span class="read-more">Official Helplines →</span></div>
+    </div>
+</section>
+
+<!-- ARTICLE PAGE VIEW -->
+<section id="articlePage" class="article-page-view" style="display:none;">
+    <div class="page-container">
+        <button class="back-link-btn" onclick="closeArticlePage()">← Back to Dashboard</button>
+        <div id="page-content-target"></div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-summary-context">
+        <h3>ONECOMPLAINT 🇮🇳</h3>
+        <p>Every citizen notices the breakdowns — broken pipes, hazardous potholes, or infrastructure neglect — yet few know which bureaucratic desk holds the authority to resolve them. OneComplaint bridges this civic information gap, transforming raw public frustration into pinpointed, actionable legal resolution.</p>
+    </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
