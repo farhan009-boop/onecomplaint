@@ -189,7 +189,12 @@ window.saveProfile = function() {
 
     const msg = document.getElementById("profile-save-msg");
     msg.style.display = "block";
-    setTimeout(() => { msg.style.display = "none"; }, 3000);
+    
+    // Close modal after 2 seconds
+    setTimeout(() => { 
+        msg.style.display = "none";
+        closeProfileModal();  // CLOSE THE MODAL
+    }, 2000);
 
     updateHeaderAfterLogin();
 };
@@ -335,11 +340,27 @@ if (cameraBtn) {
         const frame = document.getElementById("camera-preview-window");
         const video = document.getElementById("webcam-video");
         if (frame.style.display !== "none") { closeCamera(); return; }
+        
+        // Try to open rear camera first (for mobile), fallback to front
         try {
-            mediaStreamInstance = await navigator.mediaDevices.getUserMedia({ video: true });
+            const constraints = {
+                video: {
+                    facingMode: { ideal: "environment" } // Rear camera (back)
+                }
+            };
+            mediaStreamInstance = await navigator.mediaDevices.getUserMedia(constraints);
             video.srcObject = mediaStreamInstance;
             frame.style.display = "block";
-        } catch (err) { alert("Camera access denied."); }
+        } catch (err) {
+            // Fallback: try any camera
+            try {
+                mediaStreamInstance = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = mediaStreamInstance;
+                frame.style.display = "block";
+            } catch (err2) { 
+                alert("Camera access denied. Please allow camera permission."); 
+            }
+        }
     });
 }
 
@@ -1439,7 +1460,18 @@ window.closeArticlePage = function() {
     const page = document.getElementById("articlePage");
     page.style.display = "none";
     document.body.style.overflow = "auto";
+    // Optional: scroll back to the article cards
+    document.getElementById("articles").scrollIntoView({ behavior: "smooth" });
 };
+
+// Handle phone back button to close article instead of exit
+window.addEventListener('popstate', function(event) {
+    const page = document.getElementById("articlePage");
+    if (page && page.style.display !== "none") {
+        event.preventDefault();
+        closeArticlePage();
+    }
+});
 
 window.copyTemplate = function(id) {
     const el = document.getElementById(id);
