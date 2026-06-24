@@ -2,7 +2,9 @@
 // 1. FIREBASE SETUP
 // ==========================================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyDtkXEIHXJrHymHyVHe587-1y9vpMurgLY",
+    // If using a build bundler like Vite, use import.meta.env.VITE_FIREBASE_KEY
+    // If using an Express template engine or environment replacement:
+    apiKey: window.env?.FIREBASE_API_KEY || "YOUR_FALLBACK_KEY_IF_LOCAL", 
     authDomain: "onecomplaint-618c0.firebaseapp.com",
     projectId: "onecomplaint-618c0",
     storageBucket: "onecomplaint-618c0.firebasestorage.app",
@@ -398,7 +400,7 @@ if (analyzeBtn) {
         analyzeBtn.disabled = true;
 
         try {
-            const res = await fetch("/analyze", {
+            const res = await fetch("https://onecomplaint.onrender.com/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ complaint, images: attachedImagesBase64 })
@@ -550,7 +552,7 @@ if (letterBtn) {
         document.getElementById("letter-output").innerHTML = `<div class="letter-loading"><div class="letter-spinner"></div><span>Generating official letter with your details...</span></div>`;
 
         try {
-            const res = await fetch("/generate-letter", {
+            const res = await fetch("https://onecomplaint.onrender.com/generate-letter", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
