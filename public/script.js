@@ -2,14 +2,12 @@
 // 1. FIREBASE SETUP
 // ==========================================================================
 const firebaseConfig = {
-    // If using a build bundler like Vite, use import.meta.env.VITE_FIREBASE_KEY
-    // If using an Express template engine or environment replacement:
-    apiKey: window.env?.FIREBASE_API_KEY || "YOUR_FALLBACK_KEY_IF_LOCAL", 
-    authDomain: "onecomplaint-618c0.firebaseapp.com",
-    projectId: "onecomplaint-618c0",
-    storageBucket: "onecomplaint-618c0.firebasestorage.app",
-    messagingSenderId: "622889046391",
-    appId: "1:622889046391:web:9239f3ee3ec81d28775172"
+  apiKey: "AIzaSyDtkXEIHXJrHymHyVHe587-1y9vpMurgLY",
+  authDomain: "onecomplaint-618c0.firebaseapp.com",
+  projectId: "onecomplaint-618c0",
+  storageBucket: "onecomplaint-618c0.firebasestorage.app",
+  messagingSenderId: "622889046391",
+  appId: "1:622889046391:web:9239f3ee3ec81d28775172"
 };
 
 let auth = null;
